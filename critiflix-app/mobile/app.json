@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "CritiFlix",
+    "slug": "critiflix",
+    "scheme": "critiflix",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#13294B",
+    "splash": {
+      "backgroundColor": "#13294B",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "app.critiflix",
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CritiFlix needs access to your library to upload a trailer and poster."
+        }
+      ],
+      "expo-video"
+    ]
+  }
+}

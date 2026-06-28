@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CritiFlix · Admin Console</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#13294B; --navy-ink:#0B1A33; --navy-2:#1C3A66;
+    --red:#E50914; --red-soft:#FDE8E9;
+    --paper:#F3F6FC; --paper-2:#E9EEF7; --line:#E1E7F2; --white:#fff;
+    --text:#0F1E38; --mist:#5B6B86; --mist-2:#94A1B8;
+    --green:#159E68; --green-soft:#E6F6EF; --gold:#E0A21A; --amber-soft:#FCF3DF;
+    --radius:14px; --shadow:0 10px 28px rgba(15,30,56,.08);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:var(--sans);background:var(--paper);color:var(--text);-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  .hidden{display:none!important}
+
+  /* ---------- login ---------- */
+  #login{min-height:100vh;display:grid;place-items:center;background:
+     radial-gradient(900px 500px at 80% -10%, rgba(229,9,20,.20), transparent 60%), var(--navy)}
+  .login-card{width:min(380px,92vw);background:var(--white);border-radius:20px;padding:32px;box-shadow:var(--shadow)}
+  .brand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:6px}
+  .brand .word{font-weight:800;letter-spacing:1.5px;font-size:20px}
+  .brand .word b{color:var(--red)}
+  .login-card h1{font-size:16px;margin:14px 0 2px;text-align:center}
+  .login-card p{margin:0 0 18px;text-align:center;color:var(--mist);font-size:13px}
+  label{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--mist);margin:12px 2px 6px}
+  input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:11px;font-size:14px;font-weight:600;color:var(--text);background:var(--paper)}
+  input:focus{outline:2px solid var(--red);outline-offset:1px;background:#fff}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;border-radius:11px;padding:12px 16px;font-weight:700;font-size:13.5px}
+  .btn-red{background:var(--red);color:#fff;width:100%;margin-top:18px;box-shadow:0 8px 16px rgba(229,9,20,.30)}
+  .btn-red:hover{filter:brightness(1.05)}
+  .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--navy)}
+  .btn-sm{padding:7px 11px;font-size:12px;border-radius:9px}
+  .err{background:var(--red-soft);color:#9B0710;font-size:12.5px;padding:9px 12px;border-radius:10px;margin-top:14px}
+
+  /* ---------- shell ---------- */
+  #app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+  aside{background:var(--navy);color:#fff;padding:20px 14px;position:sticky;top:0;height:100vh}
+  aside .brand{justify-content:flex-start;margin:6px 8px 22px}
+  aside .word{color:#fff;font-size:17px}
+  nav a{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:11px;color:rgba(255,255,255,.72);
+    font-weight:600;font-size:13.5px;text-decoration:none;margin-bottom:3px}
+  nav a:hover{background:rgba(255,255,255,.08);color:#fff}
+  nav a.active{background:var(--red);color:#fff}
+  nav a svg{width:18px;height:18px;flex:none}
+  aside .foot{position:absolute;bottom:18px;left:14px;right:14px}
+  .me{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.07);border-radius:12px;margin-bottom:8px}
+  .me .av{width:32px;height:32px;border-radius:50%;background:var(--red);display:grid;place-items:center;font-weight:800;font-size:14px}
+  .me small{display:block;color:rgba(255,255,255,.6);font-size:10.5px}
+
+  main{padding:24px 28px 48px;overflow:auto}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+  .topbar h2{margin:0;font-size:22px;letter-spacing:-.3px}
+  .topbar .sub{color:var(--mist);font-size:12.5px;margin-top:3px}
+
+  /* ---------- cards / grid ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px;box-shadow:var(--shadow)}
+  .kpi .label{font-size:11px;color:var(--mist-2);font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+  .kpi .value{font-size:26px;font-weight:800;letter-spacing:-.6px;margin-top:7px}
+  .grid{display:grid;gap:16px}
+  .grid.two{grid-template-columns:1.4fr 1fr}
+  .grid.three{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:900px){.grid.two,.grid.three{grid-template-columns:1fr}#app{grid-template-columns:1fr}aside{display:none}}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .panel h3{margin:0 0 4px;font-size:14px}
+  .panel .hint{color:var(--mist-2);font-size:11.5px;margin:0 0 14px}
+  .chart-wrap{position:relative;height:240px}
+
+  /* ---------- tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--mist-2);
+     font-weight:700;padding:0 12px 10px;border-bottom:1px solid var(--line)}
+  td{padding:12px;border-bottom:1px solid var(--paper-2);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .who{display:flex;align-items:center;gap:10px}
+  .av-sm{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;flex:none}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .pill.gray{background:var(--paper-2);color:var(--mist)}
+  .pill.red{background:var(--red-soft);color:var(--red)}
+  .pill.green{background:var(--green-soft);color:var(--green)}
+  .pill.amber{background:var(--amber-soft);color:var(--gold)}
+  .pill.navy{background:var(--navy);color:#fff}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .chip{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;color:var(--mist)}
+  .chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .toggle{width:42px;height:24px;border-radius:999px;background:#CDD6E6;border:none;position:relative;transition:.15s}
+  .toggle.on{background:var(--green)}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.15s}
+  .toggle.on::after{left:21px}
+  .empty{padding:34px;text-align:center;color:var(--mist-2);font-size:13px}
+  .loading{padding:30px;text-align:center;color:var(--mist-2);font-size:13px}
+  .act{background:#fff;border:1px solid var(--line);color:var(--navy);border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:700}
+  .act:hover{border-color:var(--navy)}
+  .act.red{color:var(--red)} .act.green{color:var(--green)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><symbol id="shutter" viewBox="0 0 1080 1080">
+  <g fill="currentColor">
+    <path d="m693.7 641.63 75.86 167.48c-21.02 14.78-56.13 35.58-103.94 47.37-54.88 13.54-101.2 8.96-127.79 4.3 51.96-73.05 103.91-146.1 155.87-219.16Z"/>
+    <path d="m595.43 680.99-83.65 163.74c-24.66-7.22-62.82-21.7-101.84-51.72-44.8-34.46-70.11-73.53-83.04-97.23 89.51-4.93 179.02-9.85 268.52-14.78Z"/>
+    <path d="m503.39 628.7-180.17 36.69c-9.73-23.78-22.2-62.64-23.06-111.87-.99-56.51 13.78-100.66 24.24-125.54 59.66 66.91 119.32 133.82 178.98 200.73Z"/>
+    <path d="m486.88 524.13-141.02-117.98c12.53-22.44 35.14-56.41 73.09-87.78 43.57-36.01 87.29-51.98 113.27-59.32-15.11 88.36-30.23 176.72-45.34 265.08Z"/>
+    <path d="m558.34 446.03 4.32-183.81c25.35-4.19 66.01-7.7 114.2 2.41 55.32 11.61 95.07 35.83 117 51.57-78.51 43.28-157.01 86.55-235.52 129.83Z"/>
+    <path d="m958.36 1008.77H135.63c-19.69 0-35.64-15.96-35.64-35.64V150.4c0-19.69 15.96-35.65 35.65-35.65h822.73c19.69 0 35.64 15.96 35.64 35.64v822.73c0 19.69-15.96 35.64-35.64 35.64ZM135.63 150.16c-.13 0-.24.11-.24.24v822.73c0 .13.11.24.24.24h822.73c.13 0 .24-.11.24-.24V150.4c0-.13-.11-.24-.24-.24H135.63Z"/>
+  </g></symbol></svg>
+
+<!-- ================= LOGIN ================= -->
+<section id="login">
+  <div class="login-card">
+    <div class="brand"><svg style="color:var(--red)"><use href="#shutter" width="34" height="34"/></svg>
+      <span class="word">CRITI<b>FLIX</b></span></div>
+    <h1>Admin Console</h1>
+    <p>Sign in with an administrator account</p>
+    <label for="email">Email</label>
+    <input id="email" type="email" value="admin@critiflix.app" autocomplete="username" />
+    <label for="password">Password</label>
+    <input id="password" type="password" value="critiflix123" autocomplete="current-password" />
+    <button class="btn btn-red" id="loginBtn">Sign in</button>
+    <div id="loginErr" class="err hidden"></div>
+  </div>
+</section>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand"><svg style="color:var(--red)"><use href="#shutter" width="28" height="28"/></svg>
+      <span class="word">CRITI<b style="color:var(--red)">FLIX</b></span></div>
+    <nav id="nav"></nav>
+    <div class="foot">
+      <div class="me"><div class="av" id="meAv">A</div><div><b id="meName" style="font-size:13px">Admin</b><small id="meEmail"></small></div></div>
+      <button class="btn btn-ghost btn-sm" style="width:100%" id="logoutBtn">Sign out</button>
+    </div>
+  </aside>
+  <main>
+    <div class="topbar"><div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="pageSub"></div></div></div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<script>
+/* ---------------- state + api ---------------- */
+const S = { access:null, refresh:null, user:null };
+const $ = (s)=>document.querySelector(s);
+const esc = (v)=>String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const naira = (n)=>'\u20A6'+Number(n||0).toLocaleString();
+const num = (n)=>Number(n||0).toLocaleString();
+const initials = (s)=>((s||'?').trim()[0]||'?').toUpperCase();
+const colorFor = (s)=>{let h=0;for(const c of (s||''))h=c.charCodeAt(0)+((h<<5)-h);return 'hsl('+(h%360)+' 45% 42%)';};
+
+async function api(path, opts={}){
+  const res = await fetch('/api'+path, {
+    method: opts.method||'GET',
+    headers: { 'content-type':'application/json', ...(S.access?{authorization:'Bearer '+S.access}:{}) },
+    body: opts.body?JSON.stringify(opts.body):undefined,
+  });
+  if(res.status===401 && S.refresh && !opts._retry){
+    const r = await fetch('/api/auth/refresh',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({refreshToken:S.refresh})});
+    if(r.ok){const d=await r.json();S.access=d.accessToken;S.refresh=d.refreshToken;save();return api(path,{...opts,_retry:true});}
+    logout();throw new Error('Session expired');
+  }
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||('Request failed ('+res.status+')'));
+  return data;
+}
+function save(){localStorage.setItem('cf_admin',JSON.stringify({access:S.access,refresh:S.refresh,user:S.user}));}
+function restore(){try{const d=JSON.parse(localStorage.getItem('cf_admin'));if(d&&d.access){Object.assign(S,d);return true;}}catch(e){}return false;}
+function logout(){localStorage.removeItem('cf_admin');S.access=S.refresh=S.user=null;$('#app').classList.add('hidden');$('#login').classList.remove('hidden');}
+
+/* ---------------- login ---------------- */
+$('#loginBtn').onclick = async ()=>{
+  const email=$('#email').value.trim(), password=$('#password').value, err=$('#loginErr');
+  err.classList.add('hidden');
+  try{
+    const d = await api('/auth/login',{method:'POST',body:{email,password}});
+    if(d.user.role!=='admin'){err.textContent='That account is not an administrator.';err.classList.remove('hidden');return;}
+    S.access=d.accessToken;S.refresh=d.refreshToken;S.user=d.user;save();boot();
+  }catch(e){err.textContent=e.message;err.classList.remove('hidden');}
+};
+$('#password').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
+$('#logoutBtn').onclick = logout;
+
+/* ---------------- nav ---------------- */
+const SECTIONS = [
+  {id:'dashboard',label:'Dashboard',sub:'Platform analytics & health',icon:'M3 13h8V3H3zM13 21h8V3h-8zM3 21h8v-6H3z'},
+  {id:'titles',label:'Titles',sub:'Moderate & curate the catalogue',icon:'M4 6h13v12H4zM7 3h13v12'},
+  {id:'users',label:'Users',sub:'Critics & creators',icon:'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-4 3.5-6 8-6s8 2 8 6'},
+  {id:'subscriptions',label:'Subscriptions',sub:'Creator plans & revenue',icon:'M3 7h18v12H3zM3 11h18'},
+  {id:'revenue',label:'Revenue',sub:'Income & payout pool',icon:'M3 17l6-6 4 4 8-8M21 7v6h-6'},
+  {id:'cashouts',label:'Cashouts',sub:'Critic payouts',icon:'M12 1v22M5 8h9a3 3 0 010 6H7'},
+  {id:'announcements',label:'Messages',sub:'Promotional broadcasts',icon:'M4 4h16v12H7l-3 3z'},
+  {id:'integrations',label:'Integrations',sub:'Connected services',icon:'M10 13a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 11a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1'},
+];
+function renderNav(active){
+  $('#nav').innerHTML = SECTIONS.map(s=>'<a href="#'+s.id+'" class="'+(s.id===active?'active':'')+'">'+
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'+s.icon+'"/></svg>'+s.label+'</a>').join('');
+}
+window.addEventListener('hashchange', route);
+
+/* ---------------- boot ---------------- */
+function boot(){
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#meName').textContent=(S.user&&S.user.name)||'Admin'; $('#meEmail').textContent=(S.user&&S.user.email)||'';
+  $('#meAv').textContent=initials(S.user&&S.user.name);
+  if(!location.hash) location.hash='#dashboard'; else route();
+}
+function route(){
+  const id=(location.hash||'#dashboard').slice(1);
+  const sec=SECTIONS.find(s=>s.id===id)||SECTIONS[0];
+  renderNav(sec.id); $('#pageTitle').textContent=sec.label; $('#pageSub').textContent=sec.sub;
+  $('#view').innerHTML='<div class="loading">Loading\u2026</div>';
+  ({dashboard:viewDashboard,titles:viewTitles,users:viewUsers,subscriptions:viewSubs,revenue:viewRevenue,cashouts:viewCashouts,announcements:viewAnnouncements,integrations:viewIntegrations}[sec.id])();
+}
+
+/* ---------------- dashboard ---------------- */
+let charts=[];
+function killCharts(){charts.forEach(c=>{try{c.destroy()}catch(e){}});charts=[];}
+const kpi=(label,value,sub)=>'<div class="kpi"><div class="label">'+label+'</div><div class="value">'+value+'</div>'+(sub?'<div class="label" style="margin-top:6px;color:var(--mist)">'+sub+'</div>':'')+'</div>';
+async function viewDashboard(){
+  killCharts();
+  try{
+    const res = await Promise.all([api('/admin/overview'),api('/admin/analytics')]);
+    const o=res[0], a=res[1], k=o.kpis;
+    $('#view').innerHTML =
+      '<div class="kpis">'+
+        kpi('Total users',num(k.totalUsers))+
+        kpi('Subscribed creators',num(k.subscribedCreators))+
+        kpi('Monthly revenue',naira(k.mrr))+
+        kpi('Points issued \u00b7 30d',num(k.pointsIssued30d))+
+        kpi('Pending cashouts',naira(k.pendingCashouts),k.pendingCount+' awaiting')+
+      '</div>'+
+      '<div class="grid two" style="margin-bottom:16px">'+
+        '<div class="panel"><h3>New sign-ups</h3><p class="hint">Last 30 days</p><div class="chart-wrap"><canvas id="cSignups"></canvas></div></div>'+
+        '<div class="panel"><h3>User mix</h3><p class="hint">Critics vs creators</p><div class="chart-wrap"><canvas id="cMix"></canvas></div></div>'+
+      '</div>'+
+      '<div class="grid two">'+
+        '<div class="panel"><h3>Points issued by action</h3><p class="hint">How critics earn</p><div class="chart-wrap"><canvas id="cPoints"></canvas></div></div>'+
+        '<div class="panel"><h3>Top titles</h3><p class="hint">By critic score</p>'+topTitles(a.topTitles)+'</div>'+
+      '</div>';
+    drawSignups(a.signups); drawMix(o.userMix); drawPoints(a.pointsByType);
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+function topTitles(list){
+  if(!list||!list.length) return '<div class="empty">No titles yet</div>';
+  return '<table><tbody>'+list.map(t=>'<tr><td><b>'+esc(t.title)+'</b></td>'+
+    '<td style="text-align:right"><span class="pill '+(t.score>=8?'green':t.score?'amber':'gray')+'">'+(t.score?t.score.toFixed(1):'\u2014')+'/10</span></td>'+
+    '<td style="text-align:right;color:var(--mist)">'+num(t.watchCount)+' watches</td></tr>').join('')+'</tbody></table>';
+}
+function drawSignups(rows){
+  const ctx=$('#cSignups'); if(!ctx)return;
+  charts.push(new Chart(ctx,{type:'line',data:{labels:rows.map(r=>r.date.slice(5)),
+    datasets:[{data:rows.map(r=>r.count),borderColor:'#E50914',backgroundColor:'rgba(229,9,20,.10)',fill:true,tension:.35,pointRadius:2}]},
+    options:baseOpts(false)}));
+}
+function drawMix(mix){
+  const ctx=$('#cMix'); if(!ctx)return;
+  charts.push(new Chart(ctx,{type:'doughnut',data:{labels:['Critics','Creators'],
+    datasets:[{data:[mix.critics,mix.creators],backgroundColor:['#13294B','#E50914'],borderWidth:0}]},
+    options:Object.assign(baseOpts(true),{cutout:'62%'})}));
+}
+function drawPoints(by){
+  const ctx=$('#cPoints'); if(!ctx)return;
+  const labels=Object.keys(by), data=labels.map(l=>by[l]);
+  charts.push(new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:'#1C3A66',borderRadius:6}]},
+    options:baseOpts(false)}));
+}
+function baseOpts(legend){return{responsive:true,maintainAspectRatio:false,
+  plugins:{legend:legend?{position:'bottom',labels:{boxWidth:12,font:{size:12}}}:{display:false}},
+  scales:legend?{}:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#EEF2F9'},ticks:{font:{size:10}},beginAtZero:true}}};}
+
+/* ---------------- titles ---------------- */
+function statusPill(s){
+  const map={pending:'amber',reviewing:'navy',scored:'green',ended:'gray',delisted:'red',draft:'gray'};
+  return '<span class="pill '+(map[s]||'gray')+'">'+esc(s)+'</span>';
+}
+async function viewTitles(){
+  try{
+    const rows = await api('/admin/titles');
+    const pending = rows.filter(t=>t.status==='pending').length;
+    $('#view').innerHTML = '<div class="panel">'+
+      (pending?'<div style="background:#FFF7E6;border:1px solid #F0D9A6;color:#8A6D1F;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:13px"><b>'+pending+'</b> title'+(pending>1?'s':'')+' awaiting approval. Review the properties, then Approve to make '+(pending>1?'them':'it')+' visible to users.</div>':'')+
+      (rows.length?'<table>'+
+      '<thead><tr><th>Title</th><th>Creator</th><th>Plan</th><th>Status</th><th>Score</th><th>Watches</th><th>Placement</th><th></th></tr></thead>'+
+      '<tbody>'+rows.map(t=>'<tr>'+
+        '<td><b>'+esc(t.title)+'</b><div style="color:var(--mist-2);font-size:11px">'+esc(t.genre)+' \u00b7 '+esc(t.code)+'</div></td>'+
+        '<td>'+esc(t.creator||'\u2014')+'</td>'+
+        '<td><span class="pill '+(t.plan==='studio'?'navy':t.plan==='pro'?'red':'gray')+'">'+esc(t.plan||'\u2014')+'</span></td>'+
+        '<td>'+statusPill(t.status)+'</td>'+
+        '<td>'+(t.score?t.score.toFixed(1):'\u2014')+'</td>'+
+        '<td>'+num(t.watchCount)+'</td>'+
+        '<td>'+(t.featured?'<span class="pill red">Featured</span>':(t.priorityBoost?'<span class="pill amber">Boost \u00d7'+t.priorityBoost+'</span>':'<span class="pill gray">\u2014</span>'))+'</td>'+
+        '<td><div class="row-actions">'+
+          '<button class="act navy" data-view="'+t.id+'">View</button>'+
+          (t.status==='pending'?'<button class="act green" data-t="'+t.id+'" data-a="approve">Approve</button>':'')+
+          (t.status==='delisted'?'<button class="act green" data-t="'+t.id+'" data-a="relist">Relist</button>':'')+
+          (['reviewing','scored'].includes(t.status)?'<button class="act red" data-t="'+t.id+'" data-a="delist">Delist</button>':'')+
+          '<button class="act '+(t.featured?'red':'green')+'" data-t="'+t.id+'" data-a="'+(t.featured?'unfeature':'feature')+'">'+(t.featured?'Unfeature':'Feature')+'</button>'+
+          '<button class="act" data-t="'+t.id+'" data-a="boost">Boost</button>'+
+          '<button class="act red" data-t="'+t.id+'" data-a="end">End</button>'+
+        '</div></td></tr>').join('')+'</tbody></table>':'<div class="empty">No titles submitted yet</div>')+'</div>';
+    bindActions('button[data-a]',b=>'/admin/titles/'+b.dataset.t+'/'+b.dataset.a,viewTitles);
+    document.querySelectorAll('button[data-view]').forEach(b=>{ b.onclick=()=>showTitle(b.dataset.view); });
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+
+async function showTitle(id){
+  try{
+    const t = await api('/admin/titles/'+id);
+    const poster = t.posterLarge||t.posterSmall;
+    const link = (u,label)=> u?'<a href="'+esc(u)+'" target="_blank" rel="noopener" style="color:var(--red);font-weight:700">'+label+' \u2197</a>':'<span style="color:var(--mist-2)">\u2014</span>';
+    const row = (k,v)=>'<div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--paper-2)"><div style="width:120px;color:var(--mist-2);font-size:12px">'+k+'</div><div style="flex:1;font-size:13px">'+v+'</div></div>';
+    const body = '<div style="position:fixed;inset:0;background:rgba(11,26,51,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50" id="ovl">'+
+      '<div style="background:#fff;border-radius:16px;max-width:620px;width:100%;max-height:88vh;overflow:auto;padding:20px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin:0">'+esc(t.title)+'</h3><button class="act" id="ovlX">Close</button></div>'+
+        (poster?'<img src="'+esc(poster)+'" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;margin-bottom:14px" />':'')+
+        row('Status',statusPill(t.status))+
+        row('Code',esc(t.code))+
+        row('Creator',esc((t.creator&&t.creator.name)||'\u2014')+((t.creator&&t.creator.email)?' \u00b7 '+esc(t.creator.email):''))+
+        row('Genre',esc(t.genre))+
+        row('Runtime',esc(t.runtime||'\u2014')+(t.runtimeMinutes?' ('+t.runtimeMinutes+' min)':''))+
+        row('Watch points',num(t.watchPoints))+
+        row('Synopsis','<div style="white-space:pre-wrap;line-height:1.5">'+esc(t.synopsis||'\u2014')+'</div>')+
+        row('Trailer',link(t.trailerUrl,'Open trailer'))+
+        row('Full film',link(t.movieUrl,'Open full film'))+
+        '<div style="display:flex;gap:8px;margin-top:16px">'+
+          (t.status==='pending'?'<button class="btn btn-primary" id="ovlApprove">Approve &amp; publish</button>':'')+
+          (['reviewing','scored'].includes(t.status)?'<button class="btn btn-ghost" id="ovlDelist" style="color:var(--red);border-color:var(--red)">Delist (violation)</button>':'')+
+          (t.status==='delisted'?'<button class="btn btn-primary" id="ovlRelist">Relist</button>':'')+
+        '</div>'+
+      '</div></div>';
+    let m=$('#modal'); if(!m){ m=document.createElement('div'); m.id='modal'; document.body.appendChild(m); }
+    m.innerHTML=body;
+    const close=()=>{ m.innerHTML=''; };
+    $('#ovlX').onclick=close; $('#ovl').onclick=(e)=>{ if(e.target.id==='ovl') close(); };
+    const act=async(a)=>{ try{ await api('/admin/titles/'+id+'/'+a,{method:'POST'}); close(); viewTitles(); }catch(e){ alert(e.message); } };
+    if($('#ovlApprove')) $('#ovlApprove').onclick=()=>act('approve');
+    if($('#ovlDelist')) $('#ovlDelist').onclick=()=>{ if(confirm('Delist this title? It will be hidden from all users.')) act('delist'); };
+    if($('#ovlRelist')) $('#ovlRelist').onclick=()=>act('relist');
+  }catch(e){ alert(e.message); }
+}
+
+/* ---------------- users ---------------- */
+let userFilter='all';
+async function viewUsers(){
+  try{
+    const rows = await api('/admin/users');
+    const shown = rows.filter(u=>userFilter==='all'||u.role===userFilter||u.status===userFilter);
+    $('#view').innerHTML =
+      '<div class="toolbar">'+['all','critic','creator','pending','banned'].map(f=>'<button class="chip '+(f===userFilter?'active':'')+'" data-f="'+f+'">'+f[0].toUpperCase()+f.slice(1)+'</button>').join('')+'</div>'+
+      '<div class="panel">'+(shown.length?'<table>'+
+        '<thead><tr><th>User</th><th>Role</th><th>Status</th><th>Followers / Reviews</th><th>Earn</th><th>Plan / Points</th><th></th></tr></thead>'+
+        '<tbody>'+shown.map(u=>'<tr>'+
+          '<td><div class="who"><div class="av-sm" style="background:'+(u.avatarColor||colorFor(u.name))+'">'+initials(u.name)+'</div>'+
+            '<div><b>'+esc(u.name)+'</b><div style="color:var(--mist-2);font-size:11px">'+esc(u.email)+(u.phone?' \u00b7 '+esc(u.phone):'')+'</div></div></div></td>'+
+          '<td><span class="pill '+(u.role==='creator'?'navy':'gray')+'">'+esc(u.role)+'</span></td>'+
+          '<td><span class="pill '+((u.status==='verified'||u.status==='active')?'green':u.status==='banned'?'red':'amber')+'">'+esc(u.status)+'</span></td>'+
+          '<td>'+(u.role==='critic'?num(u.followers)+' / '+num(u.reviewCount):'\u2014')+'</td>'+
+          '<td>'+(u.role==='critic'?'<span class="pill '+(u.eligible?'green':'gray')+'">'+(u.eligible?'Eligible':'Locked')+'</span>':'\u2014')+'</td>'+
+          '<td>'+(u.role==='creator'?'<select class="planSel act" data-u="'+u.id+'">'+['starter','pro','studio'].map(pl=>'<option value="'+pl+'"'+(u.plan===pl?' selected':'')+'>'+pl+'</option>').join('')+'</select>':num(u.points)+' pts')+'</td>'+
+          '<td><div class="row-actions">'+
+            ((u.role==='creator'&&u.status!=='verified')?'<button class="act green" data-u="'+u.id+'" data-a="verify">Verify</button>':'')+
+            (u.status!=='banned'?'<button class="act red" data-u="'+u.id+'" data-a="ban">Ban</button>':'<button class="act green" data-u="'+u.id+'" data-a="activate">Reinstate</button>')+
+          '</div></td></tr>').join('')+'</tbody></table>':'<div class="empty">No users match this filter</div>')+'</div>';
+    $('#view').querySelectorAll('button[data-f]').forEach(b=>b.onclick=()=>{userFilter=b.dataset.f;viewUsers();});
+    $('#view').querySelectorAll('select.planSel').forEach(s=>s.onchange=async()=>{
+      s.disabled=true; try{ await api('/admin/users/'+s.dataset.u+'/plan',{method:'POST',body:{plan:s.value}}); viewUsers(); }catch(e){alert(e.message);s.disabled=false;}
+    });
+    bindActions('button[data-u]',b=>'/admin/users/'+b.dataset.u+'/'+b.dataset.a,viewUsers);
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+
+/* ---------------- subscriptions ---------------- */
+async function viewSubs(){
+  try{
+    const d = await api('/admin/subscriptions');
+    $('#view').innerHTML =
+      '<div class="kpis">'+kpi('Monthly revenue',naira(d.mrr))+kpi('Paying creators',num(d.subscribed))+'</div>'+
+      '<div class="grid three">'+d.byPlan.map(p=>'<div class="panel"><h3>'+esc(p.name)+'</h3>'+
+        '<p class="hint">'+(p.price?naira(p.price)+' / mo':'Free')+'</p>'+
+        '<div style="font-size:30px;font-weight:800;letter-spacing:-.5px">'+num(p.count)+'</div>'+
+        '<div class="label" style="color:var(--mist)">creators</div></div>').join('')+'</div>';
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+
+/* ---------------- cashouts ---------------- */
+async function viewCashouts(){
+  try{
+    const rows = await api('/admin/cashouts');
+    $('#view').innerHTML = '<div class="panel">'+(rows.length?'<table>'+
+      '<thead><tr><th>Critic</th><th>Amount</th><th>Method</th><th>Destination</th><th>Status</th><th></th></tr></thead>'+
+      '<tbody>'+rows.map(c=>'<tr>'+
+        '<td><b>'+esc(c.critic||'\u2014')+'</b><div style="color:var(--mist-2);font-size:11px">'+esc(c.code)+' \u00b7 '+num(c.points)+' pts</div></td>'+
+        '<td><b>'+naira(c.amount)+'</b></td>'+
+        '<td>'+esc(c.method==='mobile_money'?'Mobile money':'Bank')+'</td>'+
+        '<td style="color:var(--mist)">'+esc(c.destination)+'</td>'+
+        '<td><span class="pill '+(c.status==='paid'?'green':(c.status==='rejected'||c.status==='failed')?'red':c.status==='processing'?'navy':'amber')+'">'+esc(c.status)+'</span></td>'+
+        '<td><div class="row-actions">'+
+          (['review','cleared'].includes(c.status)?'<button class="act green" data-c="'+c.id+'" data-a="pay">Pay</button>':'')+
+          (c.status==='review'?'<button class="act red" data-c="'+c.id+'" data-a="reject">Reject</button>':'')+
+        '</div></td></tr>').join('')+'</tbody></table>':'<div class="empty">No cashout requests</div>')+'</div>';
+    bindActions('button[data-c]',b=>'/admin/cashouts/'+b.dataset.c+'/'+b.dataset.a,viewCashouts);
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+
+/* ---------------- integrations ---------------- */
+async function viewIntegrations(){
+  try{
+    const rows = await api('/admin/integrations');
+    $('#view').innerHTML = '<div class="grid three">'+rows.map(i=>
+      '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div><h3>'+esc(i.name)+'</h3><p class="hint">'+esc(i.key)+'</p></div>'+
+        '<button class="toggle '+(i.connected?'on':'')+'" data-k="'+i.key+'"></button></div>'+
+        '<div style="margin-top:10px;font-size:12px;color:var(--mist)">'+metaLine(i.meta)+'</div>'+
+      '</div>').join('')+'</div>';
+    $('#view').querySelectorAll('button[data-k]').forEach(b=>b.onclick=async()=>{
+      b.disabled=true; try{ await api('/admin/integrations/'+b.dataset.k+'/toggle',{method:'POST'}); viewIntegrations(); }catch(e){alert(e.message);b.disabled=false;}
+    });
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+function metaLine(m){ if(!m||typeof m!=='object')return '';
+  return Object.entries(m).slice(0,3).map(kv=>kv[0]+': <b>'+(typeof kv[1]==='number'?num(kv[1]):esc(kv[1]))+'</b>').join(' &nbsp;\u00b7&nbsp; ');
+}
+
+/* ---------------- revenue ---------------- */
+async function viewRevenue(){
+  killCharts();
+  try{
+    const d = await api('/admin/revenue');
+    const used = d.payoutPool ? Math.round((d.payoutAllocated/d.payoutPool)*100) : 0;
+    $('#view').innerHTML =
+      '<div class="kpis">'+
+        kpi('Monthly revenue',naira(d.mrr))+
+        kpi('ARPU (paying)',naira(d.arpu))+
+        kpi('Payout pool · 50%',naira(d.payoutPool))+
+        kpi('Pool remaining',naira(d.payoutRemaining),used+'% allocated')+
+      '</div>'+
+      '<div class="grid two">'+
+        '<div class="panel"><h3>Revenue by plan</h3><p class="hint">Active subscriptions</p><div class="chart-wrap"><canvas id="cRevPlan"></canvas></div></div>'+
+        '<div class="panel"><h3>Payout pool</h3><p class="hint">Half of subscription revenue funds critic payouts</p>'+
+          '<div style="margin-top:18px">'+
+            '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mist);margin-bottom:6px"><span>Allocated '+naira(d.payoutAllocated)+'</span><span>Pool '+naira(d.payoutPool)+'</span></div>'+
+            '<div style="height:14px;background:var(--paper-2);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,used)+'%;background:var(--red)"></div></div>'+
+            '<div style="margin-top:14px;font-size:13px;color:var(--mist)">Remaining available for cashouts: <b style="color:var(--text)">'+naira(d.payoutRemaining)+'</b></div>'+
+          '</div></div>'+
+      '</div>';
+    const labels=d.byPlan.map(p=>p.name), data=d.byPlan.map(p=>p.revenue);
+    const ctx=$('#cRevPlan'); if(ctx) charts.push(new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:['#94A1B8','#E50914','#13294B'],borderRadius:6}]},options:baseOpts(false)}));
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+
+/* ---------------- announcements (promotional messages) ---------------- */
+async function viewAnnouncements(){
+  try{
+    const rows = await api('/admin/announcements');
+    $('#view').innerHTML =
+      '<div class="grid two">'+
+        '<div class="panel"><h3>New message</h3><p class="hint">Broadcast to users or creators</p>'+
+          '<label>Audience</label><select id="anAud" style="width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-weight:600">'+
+            '<option value="all">Everyone</option><option value="critics">Critics</option><option value="creators">Creators</option></select>'+
+          '<label>Channel</label><select id="anCh" style="width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-weight:600">'+
+            '<option value="in_app">In-app</option><option value="whatsapp">WhatsApp</option><option value="email">Email</option></select>'+
+          '<label>Title</label><input id="anTitle" placeholder="New films this weekend"/>'+
+          '<label>Message</label><textarea id="anBody" rows="4" placeholder="Write your promotional message…" style="width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"></textarea>'+
+          '<button class="btn btn-red" id="anSend" style="margin-top:14px">Send broadcast</button></div>'+
+        '<div class="panel"><h3>Sent</h3><p class="hint">Recent broadcasts</p>'+(rows.length?rows.map(a=>
+          '<div style="padding:12px 0;border-bottom:1px solid var(--paper-2)"><div style="display:flex;justify-content:space-between"><b style="font-size:13px">'+esc(a.title)+'</b><span class="pill '+(a.audience==='creators'?'navy':a.audience==='critics'?'red':'gray')+'">'+esc(a.audience)+'</span></div>'+
+          '<div style="font-size:12px;color:var(--mist);margin-top:4px">'+esc(a.body)+'</div></div>').join(''):'<div class="empty">No messages yet</div>')+'</div>'+
+      '</div>'+
+      '<div class="panel" style="margin-top:16px"><h3>WhatsApp promotion</h3><p class="hint">Blast a promo to users\u2019 WhatsApp numbers (click-to-chat links are generated; connect the WhatsApp Business API for automatic delivery)</p>'+
+        '<label>Audience</label><select id="waAud" style="width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-weight:600">'+
+          '<option value="all">Everyone</option><option value="critics">Critics</option><option value="creators">Creators</option></select>'+
+        '<label>Title</label><input id="waTitle" placeholder="\uD83C\uDFAC New on CritiFlix"/>'+
+        '<label>Message</label><textarea id="waBody" rows="3" placeholder="Tell users what\u2019s new\u2026" style="width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"></textarea>'+
+        '<button class="btn btn-red" id="waSend" style="margin-top:14px">Launch WhatsApp promotion</button>'+
+        '<div id="waResult" style="margin-top:14px"></div></div>';
+    $('#anSend').onclick=async()=>{
+      const title=$('#anTitle').value.trim(), body=$('#anBody').value.trim();
+      if(!title||!body) return alert('Add a title and message');
+      $('#anSend').disabled=true;
+      try{ await api('/admin/announcements',{method:'POST',body:{audience:$('#anAud').value,channel:$('#anCh').value,title,body}}); viewAnnouncements(); }
+      catch(e){ alert(e.message); $('#anSend').disabled=false; }
+    };
+    $('#waSend').onclick=async()=>{
+      const title=$('#waTitle').value.trim(), message=$('#waBody').value.trim();
+      if(!title||!message) return alert('Add a title and message');
+      $('#waSend').disabled=true;
+      try{
+        const r=await api('/admin/promotions/whatsapp',{method:'POST',body:{audience:$('#waAud').value,title,message}});
+        $('#waResult').innerHTML='<div style="background:var(--paper-2);border-radius:10px;padding:12px"><b>'+r.recipientCount+'</b> recipient'+(r.recipientCount===1?'':'s')+' with a WhatsApp number. '+esc(r.note)+
+          (r.recipients&&r.recipients.length?'<div style="max-height:220px;overflow:auto;margin-top:10px">'+r.recipients.map(u=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:12.5px">'+esc(u.name)+' \u00b7 '+esc(u.whatsapp)+'</span><a class="act green" href="'+esc(u.link)+'" target="_blank" rel="noopener">Open chat</a></div>').join('')+'</div>':'')+'</div>';
+      }catch(e){ alert(e.message); }
+      finally{ $('#waSend').disabled=false; }
+    };
+  }catch(e){ $('#view').innerHTML=errBox(e); }
+}
+
+
+function bindActions(sel, urlFn, refresh){
+  $('#view').querySelectorAll(sel).forEach(b=>{ if(!b.dataset.a) return;
+    b.onclick=async()=>{ b.disabled=true; try{ await api(urlFn(b),{method:'POST'}); refresh(); }catch(e){ alert(e.message); b.disabled=false; } };
+  });
+}
+const errBox=(e)=>'<div class="panel"><div class="empty" style="color:var(--red)">'+esc(e.message||'Something went wrong')+'</div></div>';
+
+/* ---------------- start ---------------- */
+if(restore()) boot();
+</script>
+</body>
+</html>
