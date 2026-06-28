@@ -1,0 +1,25 @@
+{
+  "name": "critiflix-server",
+  "version": "1.1.0",
+  "description": "CritiFlix API — MongoDB, JWT auth (access + refresh), points, subscriptions, promotions, cashouts",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "seed": "node src/seed.js",
+    "selftest": "node src/selftest.js",
+    "check": "node src/scripts/check-models.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.0",
+    "morgan": "^1.10.0",
+    "nanoid": "^5.0.7",
+    "multer": "^2.0.0"
+  }
+}
